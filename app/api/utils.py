@@ -21,11 +21,7 @@ from .serializers import DocumentSerializer, LabelSerializer
 
 def extract_label(tag):
     ptn = re.compile(r'(B|I|E|S)-(.+)')
-    m = ptn.match(tag)
-    if m:
-        return m.groups()[1]
-    else:
-        return tag
+    return m.groups()[1] if (m := ptn.match(tag)) else tag
 
 
 class BaseStorage(object):
@@ -41,21 +37,18 @@ class BaseStorage(object):
     def save_doc(self, data):
         serializer = DocumentSerializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
-        doc = serializer.save(project=self.project)
-        return doc
+        return serializer.save(project=self.project)
 
     def save_label(self, data):
         serializer = LabelSerializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
-        label = serializer.save(project=self.project)
-        return label
+        return serializer.save(project=self.project)
 
     def save_annotation(self, data, user):
         annotation_serializer = self.project.get_annotation_serializer()
         serializer = annotation_serializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
-        annotation = serializer.save(user=user)
-        return annotation
+        return serializer.save(user=user)
 
     @classmethod
     def extract_label(cls, data):
@@ -75,8 +68,7 @@ class BaseStorage(object):
         for label in sorted(labels):
             serializer_label = {'text': label}
 
-            shortkey = cls.get_shortkey(label, existing_shortkeys)
-            if shortkey:
+            if shortkey := cls.get_shortkey(label, existing_shortkeys):
                 serializer_label['suffix_key'] = shortkey[0]
                 serializer_label['prefix_key'] = shortkey[1]
                 existing_shortkeys.add(shortkey)
@@ -98,11 +90,14 @@ class BaseStorage(object):
         model_suffix_keys = {key for (key, _) in Label.SUFFIX_KEYS}
         suffix_keys = [key for key in label.lower() if key in model_suffix_keys]
 
-        for shortkey in itertools.product(suffix_keys, prefix_keys):
-            if shortkey not in existing_shortkeys:
-                return shortkey
-
-        return None
+        return next(
+            (
+                shortkey
+                for shortkey in itertools.product(suffix_keys, prefix_keys)
+                if shortkey not in existing_shortkeys
+            ),
+            None,
+        )
 
     @classmethod
     def update_saved_labels(cls, saved, new):
@@ -177,7 +172,7 @@ class SequenceLabelingStorage(BaseStorage):
 
     @classmethod
     def extract_unique_labels(cls, labels):
-        return set([label for _, _, label in itertools.chain(*labels)])
+        return {label for _, _, label in itertools.chain(*labels)}
 
     @classmethod
     def make_annotations(cls, docs, labels, saved_labels):
@@ -212,8 +207,7 @@ class Seq2seqStorage(BaseStorage):
     def make_annotations(cls, docs, labels):
         annotations = []
         for doc, texts in zip(docs, labels):
-            for text in texts:
-                annotations.append({'document': doc.id, 'text': text})
+            annotations.extend({'document': doc.id, 'text': text} for text in texts)
         return annotations
 
 
@@ -310,10 +304,10 @@ class PlainTextParser(FileParser):
         file = EncodedIO(file)
         file = io.TextIOWrapper(file, encoding=file.encoding)
         while True:
-            batch = list(itertools.islice(file, settings.IMPORT_BATCH_SIZE))
-            if not batch:
+            if batch := list(itertools.islice(file, settings.IMPORT_BATCH_SIZE)):
+                yield [{'text': line.strip()} for line in batch]
+            else:
                 break
-            yield [{'text': line.strip()} for line in batch]
 
 
 class CSVParser(FileParser):
@@ -451,8 +445,7 @@ class CSVPainter(JSONPainter):
         res = []
         for d in data:
             annotations = d.pop('annotations')
-            for a in annotations:
-                res.append({**d, **a})
+            res.extend({**d, **a} for a in annotations)
         return res
 
 

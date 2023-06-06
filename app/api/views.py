@@ -84,7 +84,7 @@ class StatisticsAPI(APIView):
 
         if not include or 'total' in include or 'remaining' in include or 'user' in include:
             progress = self.progress(project=p)
-            response.update(progress)
+            response |= progress
 
         if include:
             response = {key: value for (key, value) in response.items() if key in include}
@@ -163,12 +163,13 @@ class DocumentList(generics.ListCreateAPIView):
         project = get_object_or_404(Project, pk=self.kwargs['project_id'])
 
         queryset = project.documents
-        if project.randomize_document_order:
-            queryset = queryset.annotate(sort_id=F('id') % self.request.user.id).order_by('sort_id')
-        else:
-            queryset = queryset.order_by('id')
-
-        return queryset
+        return (
+            queryset.annotate(sort_id=F('id') % self.request.user.id).order_by(
+                'sort_id'
+            )
+            if project.randomize_document_order
+            else queryset.order_by('id')
+        )
 
     def perform_create(self, serializer):
         project = get_object_or_404(Project, pk=self.kwargs['project_id'])
@@ -265,7 +266,7 @@ class TextUploadAPI(APIView):
         elif file_format == 'excel':
             return ExcelParser()
         else:
-            raise ValidationError('format {} is invalid.'.format(file_format))
+            raise ValidationError(f'format {file_format} is invalid.')
 
 
 class CloudUploadAPI(APIView):
@@ -278,14 +279,14 @@ class CloudUploadAPI(APIView):
             cloud_container = request.query_params['container']
             cloud_object = request.query_params['object']
         except KeyError as ex:
-            raise ValidationError('query parameter {} is missing'.format(ex))
+            raise ValidationError(f'query parameter {ex} is missing')
 
         try:
             cloud_file = self.get_cloud_object_as_io(cloud_container, cloud_object)
         except ContainerDoesNotExistError:
-            raise ValidationError('cloud container {} does not exist'.format(cloud_container))
+            raise ValidationError(f'cloud container {cloud_container} does not exist')
         except ObjectDoesNotExistError:
-            raise ValidationError('cloud object {} does not exist'.format(cloud_object))
+            raise ValidationError(f'cloud object {cloud_object} does not exist')
 
         TextUploadAPI.save_file(
             user=request.user,
@@ -342,10 +343,10 @@ class TextDownloadAPI(APIView):
     def select_painter(self, format):
         if format == 'csv':
             return CSVPainter()
-        elif format == 'json' or format == "json1":
+        elif format in ['json', "json1"]:
             return JSONPainter()
         else:
-            raise ValidationError('format {} is invalid.'.format(format))
+            raise ValidationError(f'format {format} is invalid.')
 
 
 class Users(APIView):

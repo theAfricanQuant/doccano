@@ -93,8 +93,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "is_annotator": settings.ROLE_ANNOTATOR,
             "is_annotation_approver": settings.ROLE_ANNOTATION_APPROVER,
         }
-        queryset = RoleMapping.objects.values("role_id__name")
-        if queryset:
+        if queryset := RoleMapping.objects.values("role_id__name"):
             users_role = get_object_or_404(
                 queryset, project=instance.id, user=self.context.get("request").user.id
             )

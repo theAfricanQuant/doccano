@@ -490,42 +490,54 @@ class TestDocumentListAPI(APITestCase, TestUtilsMixin):
                         expected_num_results=3)
 
     def test_returns_docs_to_project_member_filtered_to_active(self):
-        self._test_list('{}?doc_annotations__isnull=true'.format(self.url),
-                        username=self.project_member_name,
-                        password=self.project_member_pass,
-                        expected_num_results=1)
+        self._test_list(
+            f'{self.url}?doc_annotations__isnull=true',
+            username=self.project_member_name,
+            password=self.project_member_pass,
+            expected_num_results=1,
+        )
 
     def test_returns_docs_to_project_member_filtered_to_completed(self):
-        self._test_list('{}?doc_annotations__isnull=false'.format(self.url),
-                        username=self.project_member_name,
-                        password=self.project_member_pass,
-                        expected_num_results=2)
+        self._test_list(
+            f'{self.url}?doc_annotations__isnull=false',
+            username=self.project_member_name,
+            password=self.project_member_pass,
+            expected_num_results=2,
+        )
 
     def test_returns_docs_to_project_member_filtered_to_active_with_collaborative_annotation(self):
-        self._test_list('{}?doc_annotations__isnull=true'.format(self.url),
-                        username=self.super_user_name,
-                        password=self.super_user_pass,
-                        expected_num_results=3)
+        self._test_list(
+            f'{self.url}?doc_annotations__isnull=true',
+            username=self.super_user_name,
+            password=self.super_user_pass,
+            expected_num_results=3,
+        )
 
         self._patch_project(self.main_project, 'collaborative_annotation', True)
 
-        self._test_list('{}?doc_annotations__isnull=true'.format(self.url),
-                        username=self.super_user_name,
-                        password=self.super_user_pass,
-                        expected_num_results=1)
+        self._test_list(
+            f'{self.url}?doc_annotations__isnull=true',
+            username=self.super_user_name,
+            password=self.super_user_pass,
+            expected_num_results=1,
+        )
 
     def test_returns_docs_to_project_member_filtered_to_completed_with_collaborative_annotation(self):
-        self._test_list('{}?doc_annotations__isnull=false'.format(self.url),
-                        username=self.super_user_name,
-                        password=self.super_user_pass,
-                        expected_num_results=0)
+        self._test_list(
+            f'{self.url}?doc_annotations__isnull=false',
+            username=self.super_user_name,
+            password=self.super_user_pass,
+            expected_num_results=0,
+        )
 
         self._patch_project(self.main_project, 'collaborative_annotation', True)
 
-        self._test_list('{}?doc_annotations__isnull=false'.format(self.url),
-                        username=self.super_user_name,
-                        password=self.super_user_pass,
-                        expected_num_results=2)
+        self._test_list(
+            f'{self.url}?doc_annotations__isnull=false',
+            username=self.super_user_name,
+            password=self.super_user_pass,
+            expected_num_results=2,
+        )
 
     def test_returns_docs_in_consistent_order_for_all_users(self):
         self.client.login(username=self.project_member_name, password=self.project_member_pass)
@@ -1265,10 +1277,7 @@ class TestCloudUploader(TestUploader):
             'upload_format': file_format,
             'container': kwargs.pop('container', os.path.basename(DATA_DIR)),
             'object': filename,
-        }
-
-        query_params.update(kwargs)
-
+        } | kwargs
         response = self.client.get(reverse('cloud_uploader'), query_params)
 
         self.assertEqual(response.status_code, expected_status)

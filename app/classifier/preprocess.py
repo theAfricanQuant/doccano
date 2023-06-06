@@ -16,12 +16,8 @@ def tokenize(text):
     Returns:
         A list of words.
     """
-    words = t.parse(text).rstrip().split()
-
-    return words
+    return t.parse(text).rstrip().split()
 
 
 def build_vectorizer():
-    vectorizer = TfidfVectorizer(tokenizer=tokenize)
-
-    return vectorizer
+    return TfidfVectorizer(tokenizer=tokenize)

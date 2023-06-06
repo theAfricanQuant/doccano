@@ -14,7 +14,7 @@ def fetch_github_permissions(strategy, details, user=None, is_new=False, *args, 
     response = requests.post(
         url='https://api.github.com/graphql',
         headers={
-            'Authorization': 'Bearer {}'.format(kwargs['response']['access_token']),
+            'Authorization': f"Bearer {kwargs['response']['access_token']}"
         },
         json={
             'query': '''
@@ -32,8 +32,8 @@ def fetch_github_permissions(strategy, details, user=None, is_new=False, *args, 
                 'userName': details['username'],
                 'orgName': org_name,
                 'teamName': team_name,
-            }
-        }
+            },
+        },
     )
     response.raise_for_status()
     response = response.json()
@@ -54,11 +54,9 @@ def fetch_azuread_permissions(strategy, details, user=None, is_new=False, *args,
     response = requests.post(
         url='https://graph.microsoft.com/v1.0/me/checkMemberGroups',
         headers={
-            'Authorization': 'Bearer {}'.format(kwargs['response']['access_token']),
+            'Authorization': f"Bearer {kwargs['response']['access_token']}"
         },
-        json={
-            'groupIds': [group_id]
-        }
+        json={'groupIds': [group_id]},
     )
     response.raise_for_status()
     response = response.json()
